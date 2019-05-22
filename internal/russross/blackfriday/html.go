@@ -21,6 +21,8 @@ import (
 	"regexp"
 	"strconv"
 	"strings"
+
+	"go.cryptoscope.co/ssb"
 )
 
 // Html renderer configuration options.
@@ -517,10 +519,13 @@ func (options *Html) Image(out *bytes.Buffer, link []byte, title []byte, alt []b
 	if options.flags&HTML_SKIP_IMAGES != 0 {
 		return
 	}
-
 	out.WriteString("<img src=\"")
-	options.maybeWriteAbsolutePrefix(out, link)
-	attrEscape(out, link)
+	if br, err := ssb.ParseBlobRef(string(link)); err == nil {
+		fmt.Fprintf(out, "/blobs/get/%x", br.Hash)
+	} else {
+		options.maybeWriteAbsolutePrefix(out, link)
+		attrEscape(out, link)
+	}
 	out.WriteString("\" alt=\"")
 	if len(alt) > 0 {
 		attrEscape(out, alt)
@@ -558,8 +563,28 @@ func (options *Html) Link(out *bytes.Buffer, link []byte, title []byte, content 
 	}
 
 	out.WriteString("<a href=\"")
-	options.maybeWriteAbsolutePrefix(out, link)
-	attrEscape(out, link)
+
+	switch {
+	case link[0] == '%' && bytes.HasSuffix(link, []byte("=.sha256")):
+		mr, err := ssb.ParseMessageRef(string(link))
+		if err == nil {
+			fmt.Fprintf(out, "/messages/hex/%x", mr.Hash)
+		}
+	case link[0] == '&' && bytes.HasSuffix(link, []byte("=.sha256")):
+		br, err := ssb.ParseBlobRef(string(link))
+		if err == nil {
+			fmt.Fprintf(out, "/blob/get/%x", br.Hash)
+		}
+	case link[0] == '@' && bytes.HasSuffix(link, []byte("=.ed25519")):
+		fr, err := ssb.ParseFeedRef(string(link))
+		if err == nil {
+			fmt.Fprintf(out, "/profile/hex/%x", fr.ID)
+		}
+	default:
+		options.maybeWriteAbsolutePrefix(out, link)
+		attrEscape(out, link)
+	}
+
 	if len(title) > 0 {
 		out.WriteString("\" title=\"")
 		attrEscape(out, title)

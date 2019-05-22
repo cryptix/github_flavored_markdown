@@ -6,6 +6,8 @@ import (
 	"os"
 	"testing"
 
+	"github.com/stretchr/testify/assert"
+
 	"github.com/gobuffalo/github_flavored_markdown"
 	"github.com/gobuffalo/github_flavored_markdown/gfmstyle"
 	"golang.org/x/net/html"
@@ -82,11 +84,36 @@ func TestComponents(t *testing.T) {
 </ul>
 `,
 		},
+		{
+			// some ssb profile adjustments
+			text: `[@hello](@WoUivLAr+cW/BTr2R46Qp3gcYqb5CR5B0kFmW3T3kKw=.ed25519)`,
+			want: `<p><a href="/profile/hex/5a8522bcb02bf9c5bf053af6478e90a7781c62a6f9091e41d241665b74f790ac" rel="nofollow">@hello</a></p>
+`,
+		},
+		{
+			// some ssb image adjustments
+			text: `![some.jpg](&92G9krQ6jSLaVGEVua+kCF817K7Eaznb4B4K8orPuCk=.sha256)`,
+			want: `<p><img src="/blobs/get/f761bd92b43a8d22da546115b9afa4085f35ecaec46b39dbe01e0af28acfb829" alt="some.jpg"></p>
+`,
+		},
+		{
+			// some ssb blob adjustments
+			text: `[some.jpg](&92G9krQ6jSLaVGEVua+kCF817K7Eaznb4B4K8orPuCk=.sha256)`,
+			want: `<p><a href="/blob/get/f761bd92b43a8d22da546115b9afa4085f35ecaec46b39dbe01e0af28acfb829" rel="nofollow">some.jpg</a></p>
+`,
+		},
+		{
+			// some ssb msg adjustments
+			text: `[my link](%Hp8iqnqc2FRRbbq7flfvznBoabfLSo/gEfpsRx3UEw8=.sha256)`,
+			want: `<p><a href="/messages/hex/1e9f22aa7a9cd854516dbabb7e57efce706869b7cb4a8fe011fa6c471dd4130f" rel="nofollow">my link</a></p>
+`,
+		},
 	}
 
-	for _, test := range tests {
+	for i, test := range tests {
 		if got := string(github_flavored_markdown.Markdown([]byte(test.text))); got != test.want {
-			t.Errorf("\ngot %q\nwant %q", got, test.want)
+			assert.Equal(t, test.want, got, "test %d failed", i)
+			// t.Errorf("\ngot %q\nwant %q", got, test.want)
 		}
 	}
 }
