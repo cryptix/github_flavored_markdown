@@ -578,7 +578,7 @@ func (options *Html) Link(out *bytes.Buffer, link []byte, title []byte, content 
 	case link[0] == '@' && bytes.HasSuffix(link, []byte("=.ed25519")):
 		fr, err := ssb.ParseFeedRef(string(link))
 		if err == nil {
-			fmt.Fprintf(out, "/profile/hex/%x", fr.ID)
+			fmt.Fprintf(out, "/messages/by/%x", fr.ID)
 		}
 	default:
 		options.maybeWriteAbsolutePrefix(out, link)
